@@ -7,6 +7,7 @@ import com.app.jwt.util.AppConstantes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.transaction.Transactional;
@@ -19,7 +20,7 @@ public class PublicacionController {
     @Autowired
     private PublicacionServicio  publicacionServicio;
 
-    @GetMapping("/")
+    @GetMapping
     public PublicacionRespuesta listarPublicaciones(
             @RequestParam(value="pageNo", defaultValue = AppConstantes.NUM_DE_PAGINA_POR_DEFECTO,required = false) int numPagina,
             @RequestParam(value="pageSize",defaultValue = AppConstantes.TAM_DE_PAGINA_POR_DEFECTO, required = false) int tamPagina,
@@ -33,19 +34,19 @@ public class PublicacionController {
         return   ResponseEntity.ok(publicacionServicio.obtenerPublicacionPorID(id));
 
     }
-
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/guardar") //@Valida  para validar los valores de inserción o actualizacion
     public ResponseEntity<PublicacionDTO> guradaPublicaciones(@Valid @RequestBody PublicacionDTO publicacionDTO){
        return new ResponseEntity<>(publicacionServicio.crearPublicacion(publicacionDTO), HttpStatus.CREATED);
     }
-
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/actualizar/{id}")
     public ResponseEntity<PublicacionDTO> actualizarPublicacion(@Valid @RequestBody PublicacionDTO publicacionDTO,@PathVariable long id){
         PublicacionDTO publicacionRespuesta=publicacionServicio.actualizarPublicacion(publicacionDTO,id);
         return  new ResponseEntity<>(publicacionRespuesta, HttpStatus.OK);
 
     }
-
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/eliminar/{id}")
     public ResponseEntity<String> eliminarPublicacion(@PathVariable long id){
         publicacionServicio.elimnarPublicacion(id);
