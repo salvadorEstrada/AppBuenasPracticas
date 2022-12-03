@@ -1,5 +1,8 @@
 package com.app.jwt.dto;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Size;
+
 public class RegistroDTO {
     private String nombre;
     private String username;

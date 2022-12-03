@@ -1,6 +1,8 @@
 package com.app.jwt.configuracion;
 
 import com.app.jwt.security.CustomUserDetailService;
+import com.app.jwt.security.JwtAuthenticationEntryPoint;
+import com.app.jwt.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,35 +13,52 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
+public class SecurityConfig  {
     @Autowired
-    public CustomUserDetailService customUserDetailService;
+    private CustomUserDetailService customUserDetailService;
+
+    @Autowired
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(){
+        return new JwtAuthenticationFilter();
+    }
+
+
 
     @Bean
     public PasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder();
     }
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.csrf().disable() //deshabilitarlo ya spring lo implementa
+    @Bean
+    protected SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .csrf().disable() //deshabilitarlo ya spring lo implementa
+                .exceptionHandling()
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                .and()
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
                 .authorizeRequests().antMatchers(HttpMethod.GET,"/api/**")
                 .permitAll()//metodo get se permite a todos
                 .antMatchers("/api/auth/**").permitAll()
-                .anyRequest()//cualquier otra petición
-                .authenticated() //debe de ser authenticada
-                .and() //
-                .httpBasic(); //va utilixzar una autenticación básica
+                .anyRequest().authenticated()
+                .and()
+                //.addFilter(jwtAuthenticationFilter())
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .build();
+
+        //http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
     }
 
@@ -57,7 +76,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return new InMemoryUserDetailsManager(salva, admin);
     }*/
 
-    @Override
+    /*@Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
        // auth.userDetailsService(userDetailsService()).passwordEncoder(passwordEncoder());
         auth.userDetailsService(customUserDetailService).passwordEncoder(passwordEncoder());
@@ -67,5 +86,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public AuthenticationManager authenticationManagerBean() throws Exception {
         return super.authenticationManagerBean();
+    } */
+
+    @Bean
+    protected  AuthenticationManager authenticationManager(HttpSecurity http) throws Exception{
+        return http
+                .getSharedObject(AuthenticationManagerBuilder.class)
+                .userDetailsService(customUserDetailService)
+                .passwordEncoder(passwordEncoder())
+                .and()
+                .build();
     }
+
 }

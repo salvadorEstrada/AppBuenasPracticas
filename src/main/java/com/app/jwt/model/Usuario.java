@@ -1,6 +1,8 @@
 package com.app.jwt.model;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Size;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,7 +16,8 @@ public class Usuario {
     private long id;
 
     private String nombre;
-
+    @NotEmpty
+    @Size(min=2, message="El nombre del username debe tener al menos 2 caracteres")
     private String username;
 
     private String email;

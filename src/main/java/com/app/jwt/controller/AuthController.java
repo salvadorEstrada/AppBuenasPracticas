@@ -6,6 +6,8 @@ import com.app.jwt.model.Rol;
 import com.app.jwt.model.Usuario;
 import com.app.jwt.repository.RolRepository;
 import com.app.jwt.repository.UsuarioRepository;
+import com.app.jwt.security.JWTAuthResponseDTO;
+import com.app.jwt.security.JwtTokenProvide;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
 import java.util.Collections;
 
 @RestController
@@ -37,20 +40,26 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JwtTokenProvide jwtTokenProvide;
+
     @PostMapping("/login")
     //INICIAR SESSION, PASAR LAS CREDENCIALES
-    public ResponseEntity<String> unthenticateUser(@RequestBody LoginDTO loginDTO) {
+    public ResponseEntity<JWTAuthResponseDTO> unthenticateUser(@RequestBody LoginDTO loginDTO) {
 
         //Esto sirve para iniciar session, authenticar usuario
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDTO.getUsernameOrEmail(),loginDTO.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        return new ResponseEntity<>("Ha iniciado sesión exitosamente", HttpStatus.OK);
+        //obtenemos el token de jwtTokenProvider
+        String token = jwtTokenProvide.generearTokenAcceso(authentication);
+        //return new ResponseEntity(token, HttpStatus.OK); responde como texto
+        return ResponseEntity.ok(new JWTAuthResponseDTO(token));
     }
 
     //METODO PARA REGISTRAR USUARIOS
 
     @PostMapping("/registrar")
-    public ResponseEntity<?> registrarUsuario(@RequestBody RegistroDTO registroDTO){
+    public ResponseEntity<?> registrarUsuario(@Valid @RequestBody RegistroDTO registroDTO){
         //Hace la validadción por nombre de usuario (username)
         if(usuarioRepository.existsByUsername(registroDTO.getUsername())){
             return new ResponseEntity<>("Ese nombre de usuario ya existe", HttpStatus.BAD_REQUEST);
